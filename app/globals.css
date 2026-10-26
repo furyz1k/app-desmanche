@@ -1,0 +1,328 @@
+@import 'tailwindcss';
+/* Utilitário scroll-fade (esmaece as bordas da lista só quando há conteúdo escondido) */
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-separator: var(--separator);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-tertiary-foreground: var(--tertiary-foreground);
+  --color-muted: var(--muted);
+  --color-fill: var(--fill);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Paleta baseada nas cores de sistema do iOS/macOS em modo escuro.
+ * O app é sempre escuro (uso noturno, por cima do jogo), então :root e .dark
+ * compartilham os mesmos valores.
+ */
+:root,
+.dark {
+  color-scheme: dark;
+  --background: #000000;                    /* systemGroupedBackground */
+  --foreground: #ffffff;                    /* label */
+  --card: #1c1c1e;                          /* secondarySystemGroupedBackground */
+  --card-foreground: #ffffff;
+  --popover: #2c2c2e;                       /* tertiarySystemGroupedBackground */
+  --popover-foreground: #ffffff;
+  --primary: #ff9f0a;                       /* systemOrange */
+  --primary-foreground: #1a0f00;
+  --secondary: #2c2c2e;
+  --secondary-foreground: #ffffff;
+  --muted: #2c2c2e;
+  /* Rótulos secundário/terciário um pouco mais fortes que no iOS para passar de 4,5:1 nos fundos do app */
+  --muted-foreground: rgb(235 235 245 / 0.65);   /* secondaryLabel */
+  --tertiary-foreground: rgb(235 235 245 / 0.5); /* tertiaryLabel */
+  --fill: rgb(118 118 128 / 0.24);               /* tertiarySystemFill */
+  --accent: rgb(118 118 128 / 0.24);
+  --accent-foreground: #ffffff;
+  --destructive: #ff8078;                   /* systemRed clareado: texto vermelho legível sobre o fundo escuro */
+  --success: #30d158;                       /* systemGreen */
+  --warning: #ffd60a;                       /* systemYellow */
+  --border: rgb(255 255 255 / 0.08);
+  --separator: rgb(84 84 88 / 0.6);         /* separator */
+  --input: rgb(118 118 128 / 0.24);
+  --ring: rgb(255 159 10 / 0.6);
+  --radius: 0.75rem;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --muted-foreground: rgb(235 235 245 / 0.85);
+    --tertiary-foreground: rgb(235 235 245 / 0.7);
+    --fill: rgb(118 118 128 / 0.4);
+    --border: rgb(255 255 255 / 0.25);
+    --separator: rgb(255 255 255 / 0.35);
+  }
+  /* Bordas definidas no lugar de superfícies que só se diferenciam pelo tom */
+  [data-slot='panel'],
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-content'] {
+    outline: 1px solid rgb(255 255 255 / 0.35);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background font-sans text-foreground;
+    font-feature-settings: 'cv11', 'ss01';
+    font-optical-sizing: auto;
+  }
+  /* Toque: sem atraso de duplo toque, sem menu de "copiar" ao segurar e sem selecionar texto do botão */
+  button,
+  [role='switch'],
+  [role='radio'] {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Remove as setas dos campos numéricos — usamos teclado numérico no mobile */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer utilities {
+  /* Material translúcido para barras flutuantes (cabeçalho) */
+  .material-bar {
+    background: rgb(22 22 24 / 0.85);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+  /* Barra de rolagem fina que só aparece com o mouse sobre a lista, como no macOS */
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .scrollbar-subtle:hover,
+  .scrollbar-subtle:focus-visible {
+    scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+  }
+  @media (pointer: coarse) {
+    .scrollbar-subtle {
+      scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+    }
+  }
+  /* Áreas roláveis recebem foco pelo teclado (para rolar com as setas): mostrar onde o foco está */
+  .scrollbar-subtle:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+    border-radius: 0.75rem;
+  }
+  .press {
+    transition: transform 120ms ease-out, background-color 150ms ease, opacity 150ms ease, box-shadow 150ms ease;
+  }
+  .press:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  /*
+   * Área de toque mínima de 44px (HIG) em telas de toque, sem mudar o visual:
+   * um pseudo-elemento invisível cresce só no eixo em que o controle é menor que 44px.
+   */
+  .hit-44:not(.absolute, .fixed) {
+    position: relative;
+  }
+  @media (pointer: coarse) {
+    .hit-44::after {
+      content: '';
+      position: absolute;
+      top: min(0px, calc((100% - 44px) / 2));
+      bottom: min(0px, calc((100% - 44px) / 2));
+      left: min(0px, calc((100% - 44px) / 2));
+      right: min(0px, calc((100% - 44px) / 2));
+    }
+  }
+}
+
+/*
+ * Listas que rolam dentro dos cards (desktop): a lista avança sobre a margem do card para que a barra
+ * de rolagem fique na margem, com 8px de folga do conteúdo, e o conteúdo continue alinhado ao resto do card.
+ * --sb = largura da barra neste navegador (medida no carregamento; 0 onde a barra flutua sobre o conteúdo).
+ * Fora de @layer para vencer as margens utilitárias (-mx-2) das listas.
+ */
+:root {
+  --sb: 0px;
+}
+@media (width >= 64rem) {
+  .scroll-gutter,
+  .scroll-gutter-flush {
+    /* Folga de 8px, encolhendo até 4px quando a barra é larga, para a barra nunca sair da margem (20px) do card */
+    --gutter-gap: clamp(0.25rem, calc(1.25rem - var(--sb) - 0.25rem), 0.5rem);
+    margin-right: calc(-1 * (var(--gutter-gap) + var(--sb)));
+  }
+  .scroll-gutter {
+    padding-right: var(--gutter-gap);
+  }
+  /* Linhas que já têm o próprio respiro interno (histórico) */
+  .scroll-gutter-flush {
+    padding-right: 0;
+  }
+}
+
+/*
+ * Diálogos: folha que sobe de baixo no celular (arrastável para fechar) e cartão central no desktop.
+ * Entra e sai pelo mesmo caminho. CSS fora de @layer para vencer os utilitários de posição.
+ */
+[data-slot='dialog-content'] {
+  position: fixed;
+  z-index: 50;
+  transition:
+    translate 340ms cubic-bezier(0.32, 0.72, 0, 1),
+    scale 250ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 250ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (width < 40rem) {
+  [data-slot='dialog-content'] {
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: none;
+    border-radius: 1.75rem 1.75rem 0 0;
+    padding-top: 0.5rem;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    translate: 0 0;
+  }
+  [data-slot='dialog-content'][data-starting-style],
+  [data-slot='dialog-content'][data-ending-style] {
+    translate: 0 100%;
+  }
+  [data-slot='dialog-content'][data-ending-style] {
+    transition-duration: 240ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  }
+  /* Arrastar pela alça ou pelo cabeçalho não deve rolar a página por trás */
+  [data-sheet-handle],
+  [data-slot='dialog-content'] [data-slot='dialog-header'] {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+@media (width >= 40rem) {
+  [data-slot='dialog-content'] {
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+  }
+  [data-slot='dialog-content'][data-starting-style],
+  [data-slot='dialog-content'][data-ending-style] {
+    scale: 0.96;
+    opacity: 0;
+  }
+  [data-slot='dialog-content'][data-ending-style] {
+    transition-duration: 150ms;
+    transition-timing-function: ease-in;
+  }
+}
+
+/* Recusa: os botões tremem de leve para os lados, como senha errada no iPhone */
+@keyframes refuse {
+  0%, 100% { translate: 0; }
+  20% { translate: -6px; }
+  40% { translate: 5px; }
+  60% { translate: -3px; }
+  80% { translate: 2px; }
+}
+[data-shake] {
+  animation: refuse 360ms ease-out;
+}
+
+@keyframes value-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.value-pop {
+  animation: value-pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material-bar {
+    background: #161618;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@keyframes refuse-fade {
+  50% { opacity: 0.45; }
+}
+
+/* Movimento reduzido: troca deslizes e escalas por um fade curto, sem tirar o feedback */
+@media (prefers-reduced-motion: reduce) {
+  .press:active:not(:disabled) {
+    transform: none;
+    opacity: 0.7;
+  }
+  .value-pop {
+    animation: none;
+  }
+  /* Sem tremor: um piscar curto de opacidade comunica a mesma recusa */
+  [data-shake] {
+    animation: refuse-fade 360ms ease-out;
+  }
+  [data-slot='dialog-content'] {
+    transition: opacity 180ms ease;
+  }
+  [data-slot='dialog-content'][data-starting-style],
+  [data-slot='dialog-content'][data-ending-style] {
+    scale: 1;
+    opacity: 0;
+  }
+  [data-slot='presence-thumb'],
+  [data-slot='bar'] {
+    transition-duration: 1ms !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) and (width < 40rem) {
+  [data-slot='dialog-content'][data-starting-style],
+  [data-slot='dialog-content'][data-ending-style] {
+    translate: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) and (width >= 40rem) {
+  [data-slot='dialog-content'][data-starting-style],
+  [data-slot='dialog-content'][data-ending-style] {
+    translate: -50% -50%;
+  }
+}
