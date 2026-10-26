@@ -10,7 +10,7 @@ Painel para dividir o lucro dos desmanches em grupo no FiveM. A cada carro desma
 - **Botões rápidos:** 1 carro, 3 carros ou o valor que você quiser, com desfazer a qualquer momento.
 - **Caixa da facção:** separa uma porcentagem de cada lançamento antes de dividir.
 - **Ritmo:** quanto o grupo está rendendo por hora, sem contar as pausas.
-- **Histórico:** entradas, saídas e pausas, com busca por nome ou horário.
+- **Histórico protegido:** entradas, saídas e pausas, com busca por nome ou horário. Nenhum registro pode ser excluído ou alterado, então ninguém mexe no valor de ninguém. Para corrigir um engano na hora, use **Desfazer**: ele volta só a última ação.
 - **Compartilhar:** relatório com o total de cada um ou a sessão completa.
 
 ## Como usar
@@ -18,7 +18,7 @@ Painel para dividir o lucro dos desmanches em grupo no FiveM. A cada carro desma
 1. Adicione os membros pelo campo **Nome do membro**.
 2. Toque no membro para marcar se ele está **presente** ou **fora**.
 3. A cada carro desmanchado, toque em **1 carro** ou **3 carros**. Para outro valor, use **Outro valor**.
-4. Errou? Toque em **Desfazer**.
+4. Errou? Toque em **Desfazer** logo em seguida. Ele volta a última ação; registros antigos não podem ser apagados.
 5. No fim, use **Copiar resumo** para colar no Discord.
 
 O valor por carro, a porcentagem do caixa, os botões rápidos, a moeda e a pausa automática ficam nas **Configurações** (ícone de engrenagem).

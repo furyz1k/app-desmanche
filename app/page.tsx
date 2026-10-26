@@ -76,8 +76,6 @@ type Action =
   | { type: "EARN"; id: string; amount: number; label: string }
   | { type: "PAUSE" }
   | { type: "RESUME" }
-  | { type: "DELETE"; id: string }
-  | { type: "INSERT_EVENT"; event: AppEvent }
   | { type: "UNDO" }
   | { type: "CONFIG"; value: Partial<Config> }
   | { type: "NEW" }
@@ -285,16 +283,6 @@ function reducer(state: AppState, action: Action): AppState {
     case "RESUME":
       if (!isPaused(state)) return state;
       return { ...state, events: [...state.events, { id: uid(), type: "resume", ts: now }] };
-    case "DELETE":
-      return {
-        ...state,
-        events: state.events.filter((e) => e.id !== action.id),
-      };
-    case "INSERT_EVENT":
-      return {
-        ...state,
-        events: [...state.events, action.event].sort((a, b) => a.ts - b.ts),
-      };
     case "UNDO": {
       const last = state.events.at(-1);
       // Um resumo vindo de link representa vários lançamentos: não some com um Ctrl+Z
@@ -857,21 +845,11 @@ function EditToggle({ editing, onToggle, label }: { editing: boolean; onToggle: 
   );
 }
 
-function EventRow({
-  event,
-  memberName,
-  editing,
-  onDelete,
-}: {
-  event: AppEvent;
-  memberName: (id: string) => string;
-  editing: boolean;
-  onDelete: (event: AppEvent) => void;
-}) {
+/** Linha do histórico. Só leitura: nenhum registro pode ser excluído ou alterado, para ninguém mexer no valor de ninguém. */
+function EventRow({ event, memberName }: { event: AppEvent; memberName: (id: string) => string }) {
   const { title, detail } = describeEvent(event, memberName);
   return (
     <li className="flex min-h-[3.25rem] min-w-0 items-center gap-3 rounded-xl px-2 py-2 [contain-intrinsic-size:auto_3.25rem] [content-visibility:auto]">
-      {editing && <RemoveButton label={`Excluir: ${title}`} onClick={() => onDelete(event)} />}
       <span
         className={cn(
           "flex size-8 shrink-0 items-center justify-center rounded-full [&_svg]:size-4",
@@ -966,19 +944,12 @@ function HistoryDialog({
   events,
   memberName,
   sessionStart,
-  editing,
-  onToggleEditing,
-  onDelete,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   events: AppEvent[];
   memberName: (id: string) => string;
   sessionStart: number | null;
-  editing: boolean;
-  /** Sem esta função o histórico é só leitura (link compartilhado). */
-  onToggleEditing?: () => void;
-  onDelete: (event: AppEvent) => void;
 }) {
   const [kind, setKind] = useState<HistoryKind>("all");
   const [query, setQuery] = useState("");
@@ -1083,10 +1054,7 @@ function HistoryDialog({
         initialFocus={(type) => (type === "touch" ? false : searchRef.current)}
       >
         <DialogHeader className="pr-10">
-          <div className="flex items-center justify-between gap-2">
-            <DialogTitle>Histórico</DialogTitle>
-            {onToggleEditing && <EditToggle editing={editing} onToggle={onToggleEditing} label="histórico" />}
-          </div>
+          <DialogTitle>Histórico</DialogTitle>
           <DialogDescription>
             {filtering
               ? `${plural(filtered.length, "registro encontrado", "registros encontrados")} de ${events.length}`
@@ -1180,7 +1148,7 @@ function HistoryDialog({
                 </h3>
                 <ul>
                   {g.items.map((e) => (
-                    <EventRow key={e.id} event={e} memberName={memberName} editing={editing} onDelete={onDelete} />
+                    <EventRow key={e.id} event={e} memberName={memberName} />
                   ))}
                 </ul>
               </section>
@@ -1486,7 +1454,7 @@ function SessionViewer({
           ) : (
             <ul className="scrollbar-subtle scroll-gutter-flush -mx-2 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain lg:scroll-fade">
               {logDesc.slice(0, HISTORY_PREVIEW).map((e) => (
-                <EventRow key={e.id} event={e} memberName={memberName} editing={false} onDelete={() => {}} />
+                <EventRow key={e.id} event={e} memberName={memberName} />
               ))}
             </ul>
           )}
@@ -1499,8 +1467,6 @@ function SessionViewer({
         events={logEvents}
         memberName={memberName}
         sessionStart={state.sessionStart}
-        editing={false}
-        onDelete={() => {}}
       />
     </div>
   );
@@ -1820,7 +1786,6 @@ function App() {
   useEffect(() => savePrefs(prefs), [prefs]);
   hapticsEnabled = prefs.haptics;
   const [editingMembers, setEditingMembers] = useState(false);
-  const [editingHistory, setEditingHistory] = useState(false);
   const [saveWarning, setSaveWarning] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
@@ -1887,9 +1852,6 @@ function App() {
   useEffect(() => {
     if (!active.length) setEditingMembers(false);
   }, [active.length]);
-  useEffect(() => {
-    if (!state.events.length) setEditingHistory(false);
-  }, [state.events.length]);
 
   /** source identifica o botão que lançou, para ele mesmo mostrar a confirmação. */
   function add(amountValue: number, label: string, source: string) {
@@ -1991,14 +1953,6 @@ function App() {
     });
   }
 
-  function deleteEvent(event: AppEvent) {
-    dispatch({ type: "DELETE", id: event.id });
-    toast("Registro excluído", {
-      description: `${describeEvent(event, memberName).title} às ${time(event.ts)}`,
-      action: { label: "Desfazer", onClick: () => dispatch({ type: "INSERT_EVENT", event }) },
-    });
-  }
-
   function newSession() {
     const snapshot = { events: state.events, sessionStart: state.sessionStart };
     dispatch({ type: "NEW" });
@@ -2079,7 +2033,6 @@ function App() {
     const fn = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !shortcuts.current.blocked) {
         setEditingMembers(false);
-        setEditingHistory(false);
       }
       if (e.target instanceof Element && e.target.closest("input,textarea,select,[contenteditable=true]")) return;
       if (shortcuts.current.blocked) return;
@@ -2453,13 +2406,10 @@ function App() {
           subtitle={logEvents.length ? plural(logEvents.length, "registro", "registros") : "Entradas, saídas e pausas"}
           action={
             logEvents.length > 0 && (
-              <>
-                <EditToggle editing={editingHistory} onToggle={() => setEditingHistory((v) => !v)} label="histórico" />
-                <Button variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} aria-label="Ver tudo e buscar no histórico">
-                  <Search data-icon="inline-start" />
-                  {logEvents.length > HISTORY_PREVIEW ? "Ver tudo" : "Buscar"}
-                </Button>
-              </>
+              <Button variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} aria-label="Ver tudo e buscar no histórico">
+                <Search data-icon="inline-start" />
+                {logEvents.length > HISTORY_PREVIEW ? "Ver tudo" : "Buscar"}
+              </Button>
             )
           }
         >
@@ -2470,7 +2420,7 @@ function App() {
           ) : (
             <ul className="scrollbar-subtle scroll-gutter-flush -mx-2 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain lg:scroll-fade">
               {logDesc.slice(0, HISTORY_PREVIEW).map((e) => (
-                <EventRow key={e.id} event={e} memberName={memberName} editing={editingHistory} onDelete={deleteEvent} />
+                <EventRow key={e.id} event={e} memberName={memberName} />
               ))}
             </ul>
           )}
@@ -2483,9 +2433,6 @@ function App() {
         events={logEvents}
         memberName={memberName}
         sessionStart={state.sessionStart}
-        editing={editingHistory}
-        onToggleEditing={() => setEditingHistory((v) => !v)}
-        onDelete={deleteEvent}
       />
 
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} state={state} />
